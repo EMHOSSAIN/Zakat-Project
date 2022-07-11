@@ -1,0 +1,426 @@
+    // JavaScript Document
+var dtype;
+var cart = {};
+
+var getProductNameURL= donate_url+"/web_services/get_product_name.php";
+//var baseURLDonation = donate_url;
+$(document).ready(function(e) {
+
+    setUserStep();
+    if (dtype === "single") {
+        addToCart();
+    }
+    
+    //Add to Cart using form
+    $(".ask_form").submit(function(e) {
+        e.preventDefault();
+        let form = $(this);
+        let uniqueID = $(this).find("[name=cartamount]").attr("id");
+        let mAmountvalue = $(this).find("[name=cartamount]").val();
+        let productid = $(this).find("[name=cartproduct]").val();
+        let type = $(this).find("[name=dType]").val();
+        dtype = type;
+//        console.log(productid,dtype,form);
+
+        if (uniqueID == 'cartamountother') {
+            if ($(this).find("[name=cartamount]").val() < '1') {
+                $(this).find("[name=cartamount]").css('border', 'red 2px solid');
+                
+                return 0;
+            } else {
+                $(this).find("[name=cartamount]").css('border', '1px solid #fff');
+            }
+        }
+        if (dtype == "single") {
+            getProductNameById(productid).then((response)=>{
+                if(response.status=="0"){
+                    alert(response.error);
+                    return 0;
+                }
+                var productname = response.name;
+                cart = {'fund_id': parseInt(productid),'fund_name': productname,'type': 'single','shopId': '0'};
+                cart.amount = parseFloat(mAmountvalue).toFixed(2);
+                var tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+                if (tempCart) {
+                    if (tempCart.cart[0].type == 'monthly') {
+                        localStorage.clear();
+                        addToCart();
+                    }
+                }
+                if(!setCart(cart)){
+                    alert("Error in cart");
+                }
+            });
+            
+        } else if (dtype == "monthly") {
+            getProductNameById(productid).then((response)=>{
+                if(response.status=="0"){
+                    alert(response.error);
+                    return 0;
+                }
+                var productname = response.name;
+                cart = {'fund_id': parseInt(productid),'fund_name': productname,'type': 'monthly','shopId': '0'};
+                cart.amount = parseFloat(mAmountvalue).toFixed(2);
+                var tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+                if (tempCart) {
+                    if (tempCart.cart[0].type == 'single') {
+                        localStorage.clear();
+                        addToCart();
+                    }
+                }
+                if(!setCartMonthly(cart)){
+                    alert("Error in cart");
+                }else{
+                    redirect();
+                }
+            });
+            
+        }
+    });
+    
+    $("#multipleDonate").on("submit",function(e) {
+        e.preventDefault();
+        var form = new FormData($("#multipleDonate")[0]);
+        let productIdArray = form.getAll('product');
+        let amountArray = form.getAll('amount'); 
+        let parseamount = amountArray.map(a=> parseFloat(a));
+        let amountArrayReturn = filter_array_values(parseamount);
+        let type = form.getAll('type');   
+        let name1 = form.getAll("name1");
+        let name2 = form.getAll("name2");
+        var tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+//        if(amountArrayReturn.length === 0) {
+//                redirect();
+//               return 0;
+//        }
+
+        if(type[0] == 1){
+
+           if(tempCart){
+            if (tempCart.cart[0].type == "monthly") localStorage.clear();
+            }
+            for (let i = 0; i < productIdArray.length && i < amountArray.length; i++) {
+
+                let cart = {'fund_id': parseInt(productIdArray[i]),'fund_name': '','type': "single",'shopId': "0",'amount': amountArray[i]};
+                if (name1 != ""  || name2 != ""){
+                    var names = {'name1':name1.toString(),'name2':name2.toString()}
+                    cart.for = names;                       
+                }                  
+                getProductNameById(productIdArray[i]).then((response)=>{
+                    if(response.status=="0"){
+                        return 0;
+                    }
+                    cart.fund_name = response.name;
+                    if(!setCartRedirect(cart)){
+                       // return 0;
+                    }
+                    if (i == amountArray.length - 1) {
+                        redirect();
+                    }
+                });
+        }
+        } else if (type[0] == 2){
+        if(tempCart){
+            if (tempCart.cart.length !== 0) localStorage.clear();
+        }        
+        for (let i = 0; i < productIdArray.length && i < amountArray.length; i++) {
+            let cart = {'fund_id': parseInt(productIdArray[i]),'fund_name': '','type': "monthly",'shopId': "0",'amount': amountArray[i]};
+            getProductNameById(productIdArray[i]).then((response)=>{
+                if(response.status=="0"){
+                    return 0;
+                }
+                cart.fund_name = response.name;
+
+                if(!setCartRedirect(cart)){
+                  //  return 0;
+                }   
+                if (i == amountArray.length - 1) {
+                  redirect();
+                }
+            });
+            
+        }
+    }
+    });
+
+    
+    $("#quickDonationForm").on("submit", function(e) {
+        e.preventDefault();
+        let form = new FormData($("#quickDonationForm")[0]);
+        let amount = form.getAll("amount");
+        let fund_type = form.getAll("fund-type");
+        let fund_id = form.getAll("product");
+        let fund_name = $("#product option:selected").text();
+        mAmountvalue = parseFloat(amount[0]).toFixed(2);
+        let cart = {'fund_id': parseInt(fund_id[0]),'fund_name': fund_name,'type': fund_type[0],'shopId': "0",'amount': mAmountvalue};
+        if (!validate(cart)) {
+    //        redirect();
+            return 0;
+        }
+        if (fund_type == 1) {
+            let tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+            if (tempCart) {
+                if (tempCart.cart[0].type == "monthly") localStorage.clear();
+            }
+            cart.type = "single";
+            if(setCartRedirect(cart)){
+                redirect();
+            }else{
+                alert("Error in cart");
+            }
+            
+            
+        } else if (fund_type == 2) {
+            cart.type = "monthly";
+            if(setCartMonthly(cart)){
+                redirect();
+            }else{
+                alert("Error in cart");
+            }            
+        }
+
+    });
+
+    //for waqf
+    
+   $("#donationForm").on("submit",function (e){
+       e.preventDefault();      
+       let form = new FormData($("#donationForm")[0]);
+       let amount = form.getAll("amount");        
+       let fund_id = form.getAll("product");
+       let name1 = form.getAll("name1");
+       let name2 = form.getAll("name2");
+
+       let cart = {'fund_id': parseInt(fund_id[0]),'fund_name': '','type': "single",'shopId': "0",'amount': amount[0]};
+        if (name1 != ""  || name2 != ""){
+            var names = {'name1':name1[0],'name2':name2[0]}
+            cart.for = names;           
+            
+        }  
+       
+        getProductNameById(fund_id[0]).then((response)=>{
+            if(!response.status){
+                return 0;
+            }
+            cart.fund_name = response.name;
+            if (!validate(cart)) {
+                 redirect();                
+                return 0;
+            }
+            let tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+            if (tempCart) {
+                if (tempCart.cart[0].type == "monthly") localStorage.clear();
+            }
+
+            cart.type = "single";
+            if(setCartRedirect(cart))
+            {
+                redirect();
+            }
+            else{
+                alert("Error in cart");
+            }
+        });
+        
+   });
+    
+    
+});
+
+function addToCart(popup = false) {
+
+    let tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+    let total = 0;
+    let row = '';
+    if (tempCart) {
+        for (var i = 0; i < tempCart.cart.length; i++) {
+            row += '<li class="row" id="' + tempCart.cart[i].fund_id + '">';
+            row += '<div class="cartRow">';
+            row += '<div class="col-xs-7">';
+            row += '<sapn class="cartItem">' + tempCart.cart[i].fund_name + '</sapn>';
+            row += '</div>';
+            row += '<div class="col-xs-3"><span class="cart-amount-wrap">&#163;' + tempCart.cart[i].amount + '</span></div>';
+            row += '<div class="col-xs-2 text-center">';
+            row += '<a href="javascript:void(0);" ><i onclick="deleteCartItem(' + tempCart.cart[i].fund_id + ');" class="fa fa-trash"></i></a>';
+            row += '</div>';
+            row += '</div>';
+            row += '</li>';
+            total += parseFloat(tempCart.cart[i].amount);
+        }
+        total=total.toFixed(2);
+        $('#productholder li').not('li:last').remove();
+        $('#productholder li:last').before(row);
+        $('.basTotal #total').html('&#163;' + total);
+        $('#cartcount').html(tempCart.cart.length);
+        $('.cart-head-wrap').css("display", "block");
+        $('.cartEmptyMsg').css("display", "none");
+       // $('.dropdown-toggle.navIcon').dropdown('toggle');
+        if(popup){
+            $('.dropdown-toggle.navIcon').dropdown('toggle');
+            setTimeout(removeToggle, 3000);
+        }
+    } else {
+        $('#productholder li').not('li:last').remove();
+        $('#productholder li:last').before(row);
+        $('.basTotal #total').html('&#163;' + total);
+        $('#cartcount').html(0);
+        $('.cart-head-wrap').css("display", "none");
+        $('.cartEmptyMsg').css("display", "block");
+    }
+
+}
+
+function setCart(cart) {
+
+    if (cart.amount <= 0 || isNaN(cart.amount)) {
+        return 0;
+    }
+    // if (!isAdded) return 0;
+    if (!cart.amount || !cart.fund_id || !cart.fund_name || isNaN(cart.amount) || isNaN(cart.fund_id)) return 0;
+    var tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+    if (!tempCart) {
+        localStorage.setItem('cart', JSON.stringify({
+            'cart': new Array(cart)
+        })); 
+    }else{
+        for (let i = 0; i < tempCart.cart.length; i++) {
+            if(tempCart.cart[i].fund_id==cart.fund_id){
+                tempCart.cart[i].amount =(parseFloat(cart.amount)+parseFloat(tempCart.cart[i].amount)).toFixed(2);
+                localStorage.setItem('cart',JSON.stringify(tempCart));
+              //  generateTransFeeText();
+                addToCart(true);
+                return true;
+            } 
+        }
+        tempCart.cart.push(cart);
+        localStorage.setItem('cart',JSON.stringify(tempCart));
+    }
+    addToCart(true);
+    return true;
+}
+
+// monthly functions
+function setCartMonthly(cart) {
+
+    if (cart.amount <= 0 || cart.fund_id <= 0 || !cart.fund_name || isNaN(cart.amount) || isNaN(cart.fund_id)) return 0;
+    localStorage.setItem('cart', JSON.stringify({
+        'cart': new Array(cart)
+    })); 
+    return true;
+    
+    // window.location.href = '/donation';
+}
+
+function setCartRedirect(cart) {
+    if (cart.amount <= 0 || isNaN(cart.amount)) {
+        // console.log("false");
+        return 0;
+    }
+    var tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+    if (!tempCart) {//
+        localStorage.setItem('cart', JSON.stringify({
+            'cart': new Array(cart)
+        }));
+        return true;
+    }else{
+        for (let i = 0; i < tempCart.cart.length; i++) {
+            if(tempCart.cart[i].fund_id==cart.fund_id){
+                if(!cart.for){
+                tempCart.cart[i].amount =(parseFloat(cart.amount)+parseFloat(tempCart.cart[i].amount)).toFixed(2);
+                localStorage.setItem('cart',JSON.stringify(tempCart));
+                return true;
+                }else{
+                delete tempCart.cart[i].for;    
+                tempCart.cart[i].amount =(parseFloat(cart.amount)+parseFloat(tempCart.cart[i].amount)).toFixed(2);
+                tempCart.cart[i].for = cart.for;
+                localStorage.setItem('cart',JSON.stringify(tempCart));
+                return true;                    
+                }    
+            }
+
+        }
+        
+        tempCart.cart.push(cart);
+        localStorage.setItem('cart',JSON.stringify(tempCart));
+    }
+    return true;
+}
+
+//go to user info if cart data is available
+function setUserStep() {
+    let tempCart = JSON.parse(localStorage.getItem('cart') || false);
+    if (tempCart) {
+        (tempCart.cart[0].type == 'single') ? dtype = "single": dtype = "monthly";
+    } else {
+        return 0;
+    }
+}
+
+function deleteCartItem(id) {
+    let tempCart = JSON.parse(localStorage.getItem('cart') || "false");
+    if (tempCart) {
+        for (let i = 0; i < tempCart.cart.length; i++) {
+            if (tempCart.cart[i].fund_id == id) {
+                tempCart.cart.splice(i, 1);
+                break;
+            }
+        }
+    }
+    localStorage.setItem('cart', JSON.stringify(tempCart));
+    if (tempCart.cart.length === 0) {
+        localStorage.clear();
+        // location.reload();
+    }
+    addToCart();
+}
+
+/* Remove Cart Item Function Ends */
+$("#addother").on("click", function(e) {
+    e.stopPropagation();
+    $('.dropdown-toggle.navIcon').dropdown('toggle');
+});
+
+function removeToggle() {
+    $('.dropdown-toggle.navIcon').dropdown('toggle');
+}
+
+function redirect() {
+     window.location.href = donate_url;
+//     console.log('saad');
+}
+
+function validate(cartData) {
+    if (isNaN(cartData.amount) || isNaN(cartData.fund_id) || !cartData.fund_id || !cartData.amount) {
+       // console.log(cartData);
+        return false;
+    }
+    return true;
+}
+function preventForm(){
+    //console.log(this);
+    this.preventDefault();
+   // console.log(this);
+}
+async function getProductNameById(id){
+    return await $.ajax({
+        dataType: 'json',
+        type: "GET",
+        url: getProductNameURL,
+        data: {
+            value: id
+        },
+        success: function(response) {
+            return response;
+        }
+    });
+}
+function isEligible(value) {
+  if(value !== false || value !== null || value !== 0 || value !== "") {
+    // console.log(value);
+    return value;
+  }
+}
+function filter_array_values(arr) {
+  arr = arr.filter(isEligible);
+  return arr;
+}

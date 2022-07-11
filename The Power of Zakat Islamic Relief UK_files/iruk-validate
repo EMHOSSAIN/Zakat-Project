@@ -1,0 +1,127 @@
+function validateForm(){
+    var prod = document.getElementById("product").value;
+    var amount = document.getElementById("amount").value;
+
+    if (prod == "506") {
+        window.location.replace("/about-us/what-we-do/qurbani/");
+        return false;
+    } else if (prod == "1261") {
+        window.location.replace("/about-us/what-we-do/waqf/");
+        return false;
+    } else if (prod == "11000") {
+        window.location.replace("/about-us/what-we-do/orphans-and-children/");
+        return false;
+    } else if (prod =="" && amount =="") {       
+        alert("Please select a fund & enter amount");
+        return false;
+    } 
+    else if(prod =="" && amount !="")
+    {
+        alert("Please select a fund");
+        return false;
+    }
+    else if(prod !="" && amount =="")
+    {
+        alert("Please select amount");
+        return false;
+    }
+    else if (isNaN(amount)) {
+        alert("Please enter correct amount");
+        return false;
+    } else
+    return true;
+}
+
+$(document).on("change", "#quickDonationForm #product", function(){
+	var prod = document.getElementById("product").value;
+	var amount = document.getElementById("amount").value;
+	if(prod == "506" || prod == "11000" || prod == "1219") {
+		$("#amount").hide();
+		$(".donate-form label").hide();
+	} else {
+		$("#amount").show();
+		$(".donate-form label").show();
+	}
+        if (prod == "506"){
+            window.location.replace("/about-us/what-we-do/qurbani/");
+            return false;
+        }
+        else if (prod == "1261") {
+            window.location.replace("/about-us/what-we-do/waqf/");
+            return false;
+        }else if (prod == "11000") {
+            window.location.replace("/about-us/what-we-do/orphans-and-children/");
+            return false;
+        }else if (prod =="" || amount =="") {
+            alert("Please select a fund & enter amount");
+            return false;
+        } else if (isNaN(amount)) {
+            alert("Please enter correct amount");
+            return false;
+        } else
+        return true;
+});
+
+
+
+function validatemobile(){
+    var prod = document.getElementById("product-mobile").value;
+    var amount = document.getElementById("amount-mobile").value;
+
+    if (prod == "506") {
+        window.location.replace("/about-us/what-we-do/qurbani/");
+        return false;
+    } else if (prod == "11000") {
+        window.location.replace("/about-us/what-we-do/orphans-and-children/");
+        return false;
+    } else if (prod == "1261") {
+        window.location.replace("/about-us/what-we-do/waqf/");
+        return false;
+    } else if (prod =="" || amount =="") {
+        alert("Please select a fund & enter amount");
+        return false;
+    } else if (isNaN(amount)) {
+        alert("Please enter correct amount");
+        return false;
+    } else
+    return true;
+}
+
+$(document).on("change", "#product-mobile", function(){
+	var prod = document.getElementById("product-mobile").value;
+	var amount = document.getElementById("amount-mobile").value;
+	if(prod == "506" || prod == "11000" || prod == "1219") {
+		$("#amount-mobile").hide();
+		$(".donate-form label").hide();
+	} else {
+		$("#amount-mobile").show();
+		$(".donate-form label").show();
+	}
+})
+
+
+
+function validate1(){
+var prod = document.getElementById("product1").value;
+var amount = document.getElementById("amount1").value;
+if(prod =="" || amount =="")
+{
+    alert("Please select a fund & enter amount");
+    return false;
+}else if(isNaN(amount))
+{
+     alert("Please enter correct amount");
+     return false;
+}
+return true;
+}
+
+function validate2(){
+        var amount = document.getElementById("formamount").value;
+
+        if(amount <= 0 ) {
+            alert("Please enter a correct amount");
+            return false;
+        } else
+        return true;
+}
